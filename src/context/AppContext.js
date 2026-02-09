@@ -12,6 +12,9 @@ import jwtDecode from "jwt-decode";
 
 const AppContext = createContext();
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api/v1";
+
 // Función para cargar el carrito desde localStorage
 const loadCartFromStorage = () => {
   try {
@@ -213,7 +216,7 @@ export function AppProvider({ children }) {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await fetch(
-        `http://localhost:8004/api/v1/mayorista/consultar/${userId}`,
+        `${API_BASE_URL}/api/v1/mayoristas/api/v1/mayorista/consultar/${userId}`,
       );
 
       if (response.ok) {
@@ -238,7 +241,7 @@ export function AppProvider({ children }) {
       dispatch({ type: "SET_ERROR", payload: null });
 
       const response = await fetch(
-        "http://localhost:8000/api/v1/usuarios/login",
+        `${API_BASE_URL}/api/v1/auth/api/v1/usuarios/login`,
         {
           method: "POST",
           headers: {
@@ -298,7 +301,7 @@ export function AppProvider({ children }) {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await fetch(
-        "http://localhost:8016/api/v1/servicios/listar/",
+        `${API_BASE_URL}/api/v1/servicios/api/v1/servicios/listar/`,
       );
 
       if (response.ok) {
@@ -333,7 +336,7 @@ export function AppProvider({ children }) {
         photosRequestsInProgress.current.add(serviceId);
 
         const response = await fetch(
-          `http://localhost:8008/api/v1/fotos/servicios/${serviceId}`,
+          `${API_BASE_URL}/api/v1/fotos/api/v1/fotos/servicios/${serviceId}`,
         );
 
         if (response.ok) {

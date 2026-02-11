@@ -42,7 +42,7 @@ const stateBadge = (estado) => {
 };
 
 const ReservationsModal = ({ isOpen, onClose }) => {
-  const { user, isAuthenticated } = useApp();
+  const { API_BASE_URL, user, isAuthenticated } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reservas, setReservas] = useState([]);
@@ -56,7 +56,7 @@ const ReservationsModal = ({ isOpen, onClose }) => {
       setError(null);
       try {
         const idMayorista = user.id_mayorista || user.id;
-        const url = `http://localhost:8018/api/v1/reservas/listar/mayorista/${idMayorista}`;
+        const url = `${API_BASE_URL}/reservas/listar/mayorista/${idMayorista}`;
         const res = await fetch(url);
         const data = await res.json();
         if (!res.ok) {
@@ -70,7 +70,7 @@ const ReservationsModal = ({ isOpen, onClose }) => {
       }
     };
     fetchReservations();
-  }, [isOpen, isAuthenticated, user]);
+  }, [isOpen, isAuthenticated, user, API_BASE_URL]);
 
   if (!isOpen) return null;
 

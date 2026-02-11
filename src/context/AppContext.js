@@ -216,7 +216,7 @@ export function AppProvider({ children }) {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/mayoristas/api/v1/mayorista/consultar/${userId}`,
+        `${API_BASE_URL}/mayorista/consultar/${userId}`,
       );
 
       if (response.ok) {
@@ -240,19 +240,16 @@ export function AppProvider({ children }) {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "SET_ERROR", payload: null });
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/api/v1/usuarios/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            contraseña: password,
-          }),
+      const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          email,
+          contraseña: password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -300,9 +297,7 @@ export function AppProvider({ children }) {
   const fetchServices = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/servicios/api/v1/servicios/listar/`,
-      );
+      const response = await fetch(`${API_BASE_URL}/servicios/listar/`);
 
       if (response.ok) {
         const data = await response.json();
@@ -336,7 +331,7 @@ export function AppProvider({ children }) {
         photosRequestsInProgress.current.add(serviceId);
 
         const response = await fetch(
-          `${API_BASE_URL}/api/v1/fotos/api/v1/fotos/servicios/${serviceId}`,
+          `${API_BASE_URL}/fotos/servicios/${serviceId}`,
         );
 
         if (response.ok) {
@@ -431,6 +426,7 @@ export function AppProvider({ children }) {
   };
 
   const value = {
+    API_BASE_URL,
     ...state,
     dispatch,
     login,

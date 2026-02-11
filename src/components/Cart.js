@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 
 const Cart = ({ isOpen, onClose }) => {
   const {
+    API_BASE_URL,
     cart,
     removeFromCart,
     updateCartQuantity,
@@ -113,7 +114,7 @@ const Cart = ({ isOpen, onClose }) => {
     // Enviar reservas: una por cada servicio en el carrito
     try {
       setIsSubmitting(true);
-      const endpoint = "http://localhost:8018/api/v1/reservas/crear";
+      const endpoint = `${API_BASE_URL}/reservas/crear`;
 
       const todayStr = new Date().toISOString().slice(0, 10);
 

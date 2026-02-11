@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import { ShoppingCart, User, LogIn, LogOut, Menu, X } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import Cart from './Cart';
-import ReservationsModal from './ReservationsModal';
-import LoginModal from './LoginModal';
+import React, { useState } from "react";
+import { ShoppingCart, User, LogIn, LogOut, Menu, X } from "lucide-react";
+import { useApp } from "../context/AppContext";
+import Cart from "./Cart";
+import ReservationsModal from "./ReservationsModal";
+import LoginModal from "./LoginModal";
 
 const Header = () => {
-  const { 
-    user, 
-    isAuthenticated, 
-    logout, 
-    getCartItemsCount, 
-    currentCategory, 
-    setCategory 
+  const {
+    user,
+    isAuthenticated,
+    logout,
+    getCartItemsCount,
+    currentCategory,
+    setCategory,
   } = useApp();
-  
+
   const [showCart, setShowCart] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -22,11 +22,11 @@ const Header = () => {
   const [showReservations, setShowReservations] = useState(false);
 
   const categories = [
-    { id: 'all', name: 'Todos', label: 'Todos los servicios' },
-    { id: 'transportes', name: 'Transporte', label: 'Transportes' },
-    { id: 'restaurantes', name: 'Restaurantes', label: 'Restaurantes' },
-    { id: 'hoteles', name: 'Hoteles', label: 'Hoteles' },
-    { id: 'experiencias', name: 'Experiencias', label: 'Experiencias/Tour' }
+    { id: "all", name: "Todos", label: "Todos los servicios" },
+    { id: "transportes", name: "Transporte", label: "Transportes" },
+    { id: "restaurantes", name: "Restaurantes", label: "Restaurantes" },
+    { id: "hoteles", name: "Hoteles", label: "Hoteles" },
+    { id: "experiencias", name: "Experiencias", label: "Experiencias/Tour" },
   ];
 
   const handleCategoryChange = (categoryId) => {
@@ -46,19 +46,7 @@ const Header = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <img 
-                src="/logo-vertical-color.png" 
-                alt="ReservaT" 
-                className="h-10 w-auto"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }}
-              />
-              <div 
-                className="hidden text-2xl font-bold text-reservat-primary"
-                style={{ display: 'none' }}
-              >
+              <div className="text-2xl font-bold text-reservat-primary">
                 ReservaT
               </div>
             </div>
@@ -71,8 +59,8 @@ const Header = () => {
                   onClick={() => handleCategoryChange(category.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentCategory === category.id
-                      ? 'bg-reservat-primary text-white'
-                      : 'text-gray-600 hover:text-reservat-primary hover:bg-gray-50'
+                      ? "bg-reservat-primary text-white"
+                      : "text-gray-600 hover:text-reservat-primary hover:bg-gray-50"
                   }`}
                 >
                   {category.label}
@@ -112,12 +100,15 @@ const Header = () => {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-medium border border-gray-100 py-2 z-50">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">
-                          {user?.nombre || 'Usuario'}
+                          {user?.nombre || "Usuario"}
                         </p>
                         <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       <button
-                        onClick={() => { setShowReservations(true); setShowUserMenu(false); }}
+                        onClick={() => {
+                          setShowReservations(true);
+                          setShowUserMenu(false);
+                        }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                       >
                         <span>Ver reservas</span>
@@ -166,8 +157,8 @@ const Header = () => {
                     onClick={() => handleCategoryChange(category.id)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       currentCategory === category.id
-                        ? 'bg-reservat-primary text-white'
-                        : 'text-gray-600 hover:text-reservat-primary hover:bg-gray-50'
+                        ? "bg-reservat-primary text-white"
+                        : "text-gray-600 hover:text-reservat-primary hover:bg-gray-50"
                     }`}
                   >
                     {category.label}
@@ -181,13 +172,16 @@ const Header = () => {
 
       {/* Modals */}
       <Cart isOpen={showCart} onClose={() => setShowCart(false)} />
-      <ReservationsModal isOpen={showReservations} onClose={() => setShowReservations(false)} />
+      <ReservationsModal
+        isOpen={showReservations}
+        onClose={() => setShowReservations(false)}
+      />
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
-      
+
       {/* Overlay for user menu */}
       {showUserMenu && (
-        <div 
-          className="fixed inset-0 z-30" 
+        <div
+          className="fixed inset-0 z-30"
           onClick={() => setShowUserMenu(false)}
         />
       )}

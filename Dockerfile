@@ -22,6 +22,9 @@ FROM nginx:stable-alpine
 # CRA outputs to 'build' by default
 COPY --from=build /app/build /usr/share/nginx/html
 
+# Copy nginx configuration for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -3,6 +3,7 @@ import { AppProvider } from "./context/AppContext";
 import Header from "./components/Header";
 import SearchBanner from "./components/SearchBanner";
 import ServicesList from "./components/ServicesList";
+import AIChatBot from "./components/AIChatBot";
 import "./App.css";
 
 function App() {
@@ -172,6 +173,7 @@ function App() {
             </div>
           </div>
         </footer>
+        <AIChatBot />
       </div>
     </AppProvider>
   );

@@ -8,8 +8,10 @@ import {
   MapPin,
   Settings,
   FileText,
-  CheckCircle,
 } from "lucide-react";
+
+import PantallaSimulacion from "./PantallaSimulacion";
+import VisorResultado from "./VisorResultado";
 
 const INITIAL_STATE = {
   contacto: {
@@ -69,7 +71,7 @@ const INITIAL_STATE = {
 const TravelerProfileForm = () => {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [viewState, setViewState] = useState("formulario"); // 'formulario' | 'simulacion' | 'resultado'
 
   // Calcula la duración en días y noches
   useEffect(() => {
@@ -229,17 +231,9 @@ const TravelerProfileForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      setIsSubmitted(true);
-      // Imprimir el JSON completo
-      console.log("=== Perfilamiento de Viajero ===");
-      console.log(JSON.stringify(formData, null, 2));
-
-      // Auto-hide success message after some seconds for a better UX
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setFormData(INITIAL_STATE);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 5000);
+      // Cambio de estado a simulación en lugar de mensaje de éxito
+      setViewState("simulacion");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       // Scroll to first error
       const firstError = document.querySelector(".error-text");
@@ -264,27 +258,27 @@ const TravelerProfileForm = () => {
     ) : null;
   };
 
-  if (isSubmitted) {
+  if (viewState === "simulacion") {
     return (
-      <div className="max-w-3xl mx-auto my-12 p-8 bg-white rounded-xl shadow-medium text-center animate-slide-up">
-        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          ¡Solicitud Recibida!
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Hemos recibido la información de su viaje exitosamente. Pronto nos
-          contactaremos con la mejor propuesta para usted.
-        </p>
-        <button
-          onClick={() => {
-            setIsSubmitted(false);
-            setFormData(INITIAL_STATE);
-          }}
-          className="btn-primary"
-        >
-          Llenar otra solicitud
-        </button>
-      </div>
+      <PantallaSimulacion
+        onComplete={() => {
+          setViewState("resultado");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
+    );
+  }
+
+  if (viewState === "resultado") {
+    return (
+      <VisorResultado
+        data={formData}
+        onNewQuery={() => {
+          setFormData(INITIAL_STATE);
+          setViewState("formulario");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
     );
   }
 

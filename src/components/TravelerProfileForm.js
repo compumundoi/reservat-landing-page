@@ -8,6 +8,7 @@ import {
   MapPin,
   Settings,
   FileText,
+  Sparkles,
 } from "lucide-react";
 
 import PantallaSimulacion from "./PantallaSimulacion";
@@ -244,9 +245,13 @@ const TravelerProfileForm = () => {
   };
 
   const SectionTitle = ({ title, icon: Icon }) => (
-    <div className="flex items-center space-x-2 border-b border-gray-200 pb-2 mb-4 mt-6">
-      {Icon && <Icon className="h-5 w-5 text-reservat-primary" />}
-      <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+    <div className="flex items-center space-x-3 pb-3 mb-6 mt-10 border-b border-gray-100/80">
+      <div className="bg-reservat-primary/5 p-2.5 rounded-xl border border-reservat-primary/10 shadow-sm">
+        {Icon && <Icon className="h-5 w-5 text-reservat-primary" />}
+      </div>
+      <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+        {title}
+      </h2>
     </div>
   );
 
@@ -283,15 +288,27 @@ const TravelerProfileForm = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto my-8 px-4">
-      <div className="bg-white rounded-xl shadow-medium p-6 md:p-8">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-reservat-primary mb-2">
-            Perfilamiento del Viajero
+    <div className="max-w-5xl mx-auto my-6 sm:my-10 px-3 sm:px-6 lg:px-8 animate-fade-in pb-16">
+      <div className="bg-white rounded-3xl sm:rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 sm:p-10 md:p-14 relative overflow-hidden border border-gray-100">
+        {/* Subtle Background Elements */}
+        <div className="absolute top-0 right-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+          <div className="absolute -top-[10%] -right-[5%] w-[40%] h-[30%] bg-blue-50/50 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+          <div className="absolute top-[5%] -left-[10%] w-[30%] h-[30%] bg-orange-50/50 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+        </div>
+
+        <div className="relative z-10 text-center mb-10 pb-6 border-b border-gray-100">
+          <div className="inline-flex items-center justify-center p-3 bg-reservat-primary/5 rounded-2xl mb-4 text-reservat-primary shadow-sm border border-reservat-primary/10">
+            <Compass className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-3">
+            Perfilamiento del{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-reservat-primary to-reservat-orange">
+              Viajero
+            </span>
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-base text-gray-500 max-w-2xl mx-auto leading-relaxed">
             Diligencia el siguiente formulario para que podamos diseñar la mejor
-            experiencia de viaje para ti.
+            experiencia de viaje personalizada exclusivamente para ti.
           </p>
         </div>
 
@@ -306,6 +323,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ej. Juan Pérez…"
                   className={`input-field py-1.5 ${errors["contacto.nombre"] ? "border-red-500" : ""}`}
                   value={formData.contacto.nombre}
                   onChange={(e) =>
@@ -320,6 +338,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="tel"
+                  placeholder="Ej. +57 321 000 0000…"
                   className={`input-field py-1.5 ${errors["contacto.telefono"] ? "border-red-500" : ""}`}
                   value={formData.contacto.telefono}
                   onChange={(e) =>
@@ -334,6 +353,8 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="email"
+                  placeholder="ejemplo@correo.com…"
+                  spellCheck={false}
                   className={`input-field py-1.5 ${errors["contacto.email"] ? "border-red-500" : ""}`}
                   value={formData.contacto.email}
                   onChange={(e) =>
@@ -348,6 +369,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ej. Bogotá…"
                   className={`input-field py-1.5 ${errors["contacto.ciudadOrigen"] ? "border-red-500" : ""}`}
                   value={formData.contacto.ciudadOrigen}
                   onChange={(e) =>
@@ -388,6 +410,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ej. Cancún, Madrid…"
                   className={`input-field py-1.5 ${errors["viaje.destinos"] ? "border-red-500" : ""}`}
                   value={formData.viaje.destinos}
                   onChange={(e) =>
@@ -524,6 +547,7 @@ const TravelerProfileForm = () => {
                 <input
                   type="number"
                   min="1"
+                  placeholder="Ej. 2…"
                   className={`input-field py-1.5 ${errors["grupoViajero.totalViajeros"] ? "border-red-500" : ""}`}
                   value={formData.grupoViajero.totalViajeros}
                   onChange={(e) =>
@@ -543,6 +567,7 @@ const TravelerProfileForm = () => {
                 <input
                   type="number"
                   min="0"
+                  placeholder="Ej. 2…"
                   className={`input-field py-1.5 ${errors["grupoViajero.adultos"] ? "border-red-500" : ""}`}
                   value={formData.grupoViajero.adultos}
                   onChange={(e) =>
@@ -558,6 +583,7 @@ const TravelerProfileForm = () => {
                 <input
                   type="number"
                   min="0"
+                  placeholder="Ej. 1…"
                   className="input-field py-1.5"
                   value={formData.grupoViajero.ninos}
                   onChange={(e) =>
@@ -572,6 +598,7 @@ const TravelerProfileForm = () => {
                 <input
                   type="number"
                   min="0"
+                  placeholder="Ej. 0…"
                   className="input-field py-1.5"
                   value={formData.grupoViajero.adultosMayores}
                   onChange={(e) =>
@@ -590,7 +617,7 @@ const TravelerProfileForm = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej. 5, 8 y 12 años"
+                    placeholder="Ej. 5, 8 y 12 años…"
                     className={`input-field py-1.5 ${errors["grupoViajero.edadesNinos"] ? "border-red-500" : ""}`}
                     value={formData.grupoViajero.edadesNinos}
                     onChange={(e) =>
@@ -610,7 +637,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <textarea
                   className="input-field py-1.5 resize-none h-16"
-                  placeholder="Alergias, movilidad reducida, dietas, etc."
+                  placeholder="Alergias, movilidad reducida, dietas…"
                   value={formData.grupoViajero.requerimientosEspeciales}
                   onChange={(e) =>
                     handleChange(
@@ -848,6 +875,7 @@ const TravelerProfileForm = () => {
                 <input
                   type="number"
                   min="1"
+                  placeholder="Ej. 1…"
                   className={`input-field py-1.5 ${errors["alojamiento.numeroHabitaciones"] ? "border-red-500" : ""}`}
                   value={formData.alojamiento.numeroHabitaciones}
                   onChange={(e) =>
@@ -968,6 +996,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ej. Aeropuerto El Dorado…"
                   className={`input-field py-1.5 ${errors["transporte.puntoSalida"] ? "border-red-500" : ""}`}
                   value={formData.transporte.puntoSalida}
                   onChange={(e) =>
@@ -983,6 +1012,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ej. Aeropuerto de Cancún…"
                   className={`input-field py-1.5 ${errors["transporte.puntoLlegada"] ? "border-red-500" : ""}`}
                   value={formData.transporte.puntoLlegada}
                   onChange={(e) =>
@@ -1150,7 +1180,7 @@ const TravelerProfileForm = () => {
                 </label>
                 <textarea
                   className="input-field py-1.5 resize-none h-20"
-                  placeholder="Escriba aquí cualquier información adicional..."
+                  placeholder="Escriba aquí cualquier información adicional relacionada al viaje…"
                   value={formData.entregable.comentariosAdicionales}
                   onChange={(e) =>
                     handleChange(
@@ -1164,17 +1194,20 @@ const TravelerProfileForm = () => {
             </div>
           </section>
 
-          <div className="mt-8 pt-4 border-t border-gray-100 text-center">
+          <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col items-center">
             {Object.keys(errors).length > 0 && (
-              <p className="text-red-500 font-medium mb-3 text-sm">
-                Por favor, complete todos los campos requeridos correctamente.
-              </p>
+              <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl w-full max-w-2xl border border-red-100 flex items-center justify-center space-x-2">
+                <span className="font-medium text-sm">
+                  Por favor, complete todos los campos requeridos correctamente.
+                </span>
+              </div>
             )}
             <button
               type="submit"
-              className="btn-primary w-full md:w-1/2 py-3 text-lg font-bold"
+              className="bg-gradient-to-r from-reservat-primary to-reservat-primary/90 text-white w-full sm:w-auto px-10 py-4 text-base font-bold rounded-2xl shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.4)] transition-all duration-300 transform hover:-translate-y-1 focus:ring-4 focus:ring-reservat-primary/30 flex justify-center items-center group"
             >
-              Enviar Solicitud
+              <span>Generar Experiencia Única</span>
+              <Sparkles className="ml-2 h-5 w-5 opacity-80 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
         </form>

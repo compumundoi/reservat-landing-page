@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, Sparkles } from "lucide-react";
 
 const STAGES = [
   {
@@ -80,58 +80,62 @@ const PantallaSimulacion = ({ onComplete }) => {
   const currentStage = STAGES[currentStageIdx] || STAGES[STAGES.length - 1];
 
   return (
-    <div className="max-w-4xl mx-auto my-8 px-4">
-      <div className="bg-gray-900 rounded-xl shadow-2xl p-8 md:p-12 text-white relative overflow-hidden h-[600px] flex flex-col items-center justify-center animate-slide-up">
-        {/* Logo / Icono */}
-        <div className="mb-8 absolute top-8 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-reservat-primary to-reservat-orange flex items-center gap-2">
-          <span>ReservaT AI</span>
+    <div className="max-w-4xl mx-auto my-8 px-4 animate-fade-in">
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[500px] flex flex-col items-center justify-between p-8 md:p-12 relative border border-gray-100">
+        {/* Fondo sutil (Light Mode) */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob"></div>
+          <div className="absolute top-[20%] -left-[10%] w-[50%] h-[50%] bg-orange-50 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000"></div>
         </div>
 
-        {/* Círculo pulsante y Mensaje Actual */}
-        <div className="flex flex-col items-center z-10 w-full max-w-lg mb-12">
-          <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+        {/* Logo / Header */}
+        <div className="z-10 w-full mb-8 flex items-center justify-center gap-2">
+          <Sparkles className="h-6 w-6 text-reservat-primary" />
+          <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-reservat-primary to-reservat-orange tracking-tight">
+            ReservaT AI
+          </h1>
+        </div>
+
+        {/* Contenido Principal (Spinner + Texto) */}
+        <div className="z-10 flex flex-col items-center justify-center flex-1 w-full max-w-xl">
+          <div className="relative w-28 h-28 mb-8 flex items-center justify-center bg-white/50 rounded-full shadow-sm backdrop-blur-sm">
             {currentStageIdx < STAGES.length - 1 ? (
               <>
+                <div className="absolute inset-0 rounded-full border-4 border-gray-100"></div>
                 <div className="absolute inset-0 rounded-full border-4 border-reservat-primary border-t-transparent animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-4 border-reservat-orange border-b-transparent animate-spin-reverse delay-150"></div>
-                <Loader2 className="h-8 w-8 text-reservat-primary animate-pulse" />
+                <div className="absolute inset-3 rounded-full border-4 border-reservat-orange/30 border-b-transparent animate-spin-reverse delay-150"></div>
+                <Loader2 className="h-10 w-10 text-reservat-primary animate-pulse" />
               </>
             ) : (
-              <CheckCircle className="h-16 w-16 text-green-400 animate-bounce" />
+              <CheckCircle className="h-16 w-16 text-green-500 animate-bounce" />
             )}
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2 min-h-[4rem] flex items-center">
-            {currentStage.main}
-          </h2>
-          <p className="text-gray-400 text-center text-sm md:text-base h-6">
-            {currentStage.sub}
-          </p>
-        </div>
 
-        {/* Barra de Progreso */}
-        <div className="w-full max-w-lg z-10 mb-8 mt-auto">
-          <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2">
-            <span>PROCESANDO...</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-gray-800 rounded-full h-2 shadow-inner overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-reservat-primary to-reservat-orange h-2 rounded-full transition-all ease-linear"
-              style={{ width: `${progress}%` }}
-            ></div>
+          <div className="text-center w-full">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 tracking-tight leading-tight min-h-[4rem] flex justify-center items-center">
+              {currentStage.main}
+            </h2>
+            <p className="text-gray-500 font-medium text-sm md:text-base h-6">
+              {currentStage.sub}
+            </p>
           </div>
         </div>
 
-        {/* Log / Historial de etapas completadas */}
-        <div className="w-full max-w-lg z-10 opacity-70">
-          <ul className="space-y-3">
+        {/* Historial de Progreso */}
+        <div className="w-full max-w-xl z-10 mt-8 mb-10 overflow-hidden relative">
+          {/* Faded edges para el log */}
+          <div className="absolute top-0 w-full h-4 bg-gradient-to-b from-white to-transparent z-10"></div>
+          <div className="absolute bottom-0 w-full h-4 bg-gradient-to-t from-white to-transparent z-10"></div>
+
+          <ul className="space-y-3 py-2 px-1 max-h-32 overflow-y-auto hidden-scrollbar">
             {STAGES.slice(0, currentStageIdx).map((stage, idx) => (
               <li
                 key={idx}
-                className="flex items-center space-x-3 animate-fade-in"
+                className="flex items-center space-x-3 animate-fade-in opacity-80"
               >
-                <CheckCircle className="h-4 w-4 text-green-400 shrink-0" />
-                <span className="text-sm text-gray-300 font-medium line-clamp-1">
+                <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="text-sm font-medium text-gray-600 line-clamp-1">
                   {stage.main}
                 </span>
               </li>
@@ -139,10 +143,23 @@ const PantallaSimulacion = ({ onComplete }) => {
           </ul>
         </div>
 
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute -top-32 -left-32 w-64 h-64 bg-reservat-primary rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-32 -right-32 w-64 h-64 bg-reservat-orange rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-32 left-1/2 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        {/* Footer Barra de Progreso */}
+        <div className="w-full max-w-xl z-10 pt-6 border-t border-gray-100">
+          <div className="flex justify-between items-end mb-3">
+            <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">
+              Procesando Solicitud
+            </span>
+            <span className="text-sm font-bold text-reservat-primary">
+              {Math.round(progress)}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
+            <div
+              className="bg-gradient-to-r from-reservat-primary to-reservat-orange h-full rounded-full transition-all ease-linear shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
   );

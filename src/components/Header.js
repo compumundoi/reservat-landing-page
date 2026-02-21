@@ -27,6 +27,11 @@ const Header = () => {
     { id: "restaurantes", name: "Restaurantes", label: "Restaurantes" },
     { id: "hoteles", name: "Hoteles", label: "Hoteles" },
     { id: "experiencias", name: "Experiencias", label: "Experiencias/Tour" },
+    {
+      id: "perfilamiento",
+      name: "Perfilamiento",
+      label: "✨ Perfilamiento del viajero",
+    },
   ];
 
   const handleCategoryChange = (categoryId) => {

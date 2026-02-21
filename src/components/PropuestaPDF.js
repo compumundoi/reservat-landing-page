@@ -18,7 +18,6 @@ Font.register({
   src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf",
 });
 
-const themeUrl = "#1A365D"; // Un azul muy oscuro profesional para emular Reservat Primary, se puede ajustar
 const primaryColor = "#2563EB"; // Blue-600
 const orangeAccent = "#F97316";
 
@@ -426,7 +425,6 @@ export const PropuestaPDF = ({ data }) => {
 
           <Text
             style={{
-              ...styles.note,
               maxWidth: "100%",
               textAlign: "left",
               marginTop: 15,

@@ -173,7 +173,7 @@ function App() {
             </div>
           </div>
         </footer>
-        <AIChatBot />
+        {/*<AIChatBot />*/}
       </div>
     </AppProvider>
   );

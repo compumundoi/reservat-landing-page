@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Plus, Minus, Trash2, ShoppingBag, LogIn } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Swal from "sweetalert2";
+import Cookies from "js-cookie";
 
 const Cart = ({ isOpen, onClose }) => {
   const {
@@ -17,8 +18,6 @@ const Cart = ({ isOpen, onClose }) => {
     fetchServicePhotos,
   } = useApp();
 
-  // Estado modal de resumen
-  const [showSummary, setShowSummary] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Cargar fotos de los servicios en el carrito
@@ -111,10 +110,40 @@ const Cart = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Enviar reservas: una por cada servicio en el carrito
+    // Una solicitud de reserva por cada servicio del carrito. El estado lo
+    // fija el backend en "pendiente": aca no se decide nada, se solicita.
+    const idMayorista = user?.id_mayorista || user?.id || "";
+    if (!idMayorista) {
+      Swal.fire({
+        icon: "error",
+        title: "No pudimos identificar tu cuenta",
+        text: "Volve a iniciar sesion e intenta nuevamente.",
+        confirmButtonColor: "#263DBF",
+      });
+      return;
+    }
+
+    // Sin proveedor la reserva no se puede atribuir a nadie, y el backend la
+    // rechaza con un 422 que no le dice nada al usuario.
+    const sinProveedor = cart.filter(
+      (item) => !(item.id_proveedor || item.proveedor_id),
+    );
+    if (sinProveedor.length > 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Servicios sin proveedor asociado",
+        html: `No podemos reservar: <b>${sinProveedor
+          .map((item) => item.nombre)
+          .join(", ")}</b>. Quitalos del carrito o contactanos.`,
+        confirmButtonColor: "#263DBF",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const endpoint = `${API_BASE_URL}/reservas/crear`;
+      const token = Cookies.get("access_token");
 
       const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -126,18 +155,17 @@ const Cart = ({ isOpen, onClose }) => {
           todayStr;
 
         const payload = {
-          id_proveedor: item.id_proveedor || item.proveedor_id || "",
+          id_proveedor: item.id_proveedor || item.proveedor_id,
           id_servicio: item.id_servicio,
-          id_mayorista: (user && (user.id_mayorista || user.id)) || "",
+          id_mayorista: idMayorista,
           nombre_servicio: item.nombre || "",
           descripcion: item.descripcion || "",
           tipo_servicio: String(item.tipo_servicio || "").toLowerCase(),
           precio: String(item.precio ?? ""),
           ciudad: item.ciudad || "",
           activo: true,
-          estado: "pendiente",
           observaciones:
-            "pendiente de confirmacion para disponibilidad de fechas ",
+            "pendiente de confirmacion para disponibilidad de fechas",
           fecha_creacion: todayStr,
           cantidad: item.quantity || 1,
           fecha_inicio: fechaEntrada,
@@ -148,45 +176,53 @@ const Cart = ({ isOpen, onClose }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(payload),
         })
           .then(async (res) => {
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-              throw new Error(data?.message || `Error ${res.status}`);
+              throw new Error(data?.detail || data?.message || `Error ${res.status}`);
             }
             return { ok: true, item, data };
           })
           .catch((err) => ({ ok: false, item, error: err.message }));
       });
 
-      const results = await Promise.allSettled(requests);
-      const flattened = results.map((r) => r.value || r.reason);
-      const success = flattened.filter((r) => r?.ok);
-      const failed = flattened.filter((r) => !r?.ok);
+      const resultados = await Promise.all(requests);
+      const exitosas = resultados.filter((r) => r.ok);
+      const fallidas = resultados.filter((r) => !r.ok);
 
-      if (success.length > 0 && failed.length === 0) {
+      // Sacar del carrito solo lo que ya quedo registrado: si el usuario
+      // reintenta, no se duplican las reservas que si se crearon.
+      exitosas.forEach((r) => removeFromCart(r.item.id_servicio));
+
+      if (fallidas.length === 0) {
         Swal.fire({
           icon: "success",
-          title: "Reservas registradas",
-          text: `Se registraron ${success.length} reserva(s) correctamente.`,
+          title: "Solicitud enviada",
+          html:
+            `Registramos <b>${exitosas.length}</b> solicitud(es) de reserva.<br/>` +
+            "Quedan <b>pendientes de aprobacion</b>: un administrador las revisa " +
+            "y te avisamos con la respuesta.",
           confirmButtonColor: "#263DBF",
         });
-        // Vaciar carrito tras éxito total
-        clearCart();
-      } else if (success.length > 0 && failed.length > 0) {
+      } else if (exitosas.length > 0) {
         Swal.fire({
           icon: "warning",
-          title: "Reservas parcialmente registradas",
-          html: `Exitosas: <b>${success.length}</b><br/>Fallidas: <b>${failed.length}</b>`,
+          title: "Solicitud parcialmente enviada",
+          html:
+            `Registradas: <b>${exitosas.length}</b><br/>` +
+            `Fallidas: <b>${fallidas.length}</b><br/><br/>` +
+            "Las fallidas siguen en tu carrito, podes reintentar.",
           confirmButtonColor: "#263DBF",
         });
       } else {
         Swal.fire({
           icon: "error",
-          title: "No se pudieron registrar las reservas",
-          text: "Intenta nuevamente más tarde.",
+          title: "No pudimos enviar tu solicitud",
+          text: fallidas[0]?.error || "Intenta nuevamente mas tarde.",
           confirmButtonColor: "#263DBF",
         });
       }
@@ -194,7 +230,7 @@ const Cart = ({ isOpen, onClose }) => {
       Swal.fire({
         icon: "error",
         title: "Error inesperado",
-        text: e.message || "Intenta nuevamente más tarde.",
+        text: e.message || "Intenta nuevamente mas tarde.",
         confirmButtonColor: "#263DBF",
       });
     } finally {
@@ -362,6 +398,11 @@ const Cart = ({ isOpen, onClose }) => {
               </span>
             </div>
 
+            <p className="text-xs text-gray-500">
+              Tu solicitud queda pendiente de aprobación por un administrador.
+              Te avisamos apenas haya respuesta.
+            </p>
+
             {/* Actions */}
             <div className="space-y-2">
               <button
@@ -373,9 +414,9 @@ const Cart = ({ isOpen, onClose }) => {
                 <span>
                   {isAuthenticated
                     ? isSubmitting
-                      ? "Enviando reservas..."
-                      : "Proceder al pago"
-                    : "Inicia sesión para comprar"}
+                      ? "Enviando solicitud..."
+                      : "Solicitar reserva"
+                    : "Inicia sesión para reservar"}
                 </span>
               </button>
 
@@ -390,91 +431,6 @@ const Cart = ({ isOpen, onClose }) => {
         )}
       </div>
 
-      {/* Modal Resumen de Compra */}
-      {showSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60] animate-fade-in">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-bold">Resumen de compra</h3>
-              <button
-                onClick={() => setShowSummary(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              {cart.map((item) => (
-                <div key={item.id_servicio} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {item.nombre}
-                      </div>
-                      <div className="text-sm text-gray-500">{item.ciudad}</div>
-                    </div>
-                    <div className="font-bold text-reservat-primary">
-                      ${(item.precio * item.quantity).toLocaleString()}
-                    </div>
-                  </div>
-                  {item.reserva && (
-                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-700">
-                      <div>
-                        <span className="font-medium">Personas:</span>{" "}
-                        {item.quantity}
-                      </div>
-                      <div>
-                        <span className="font-medium">Entrada:</span>{" "}
-                        {item.reserva.fecha_entrada}
-                      </div>
-                      {item.reserva.fecha_salida && (
-                        <div>
-                          <span className="font-medium">Salida:</span>{" "}
-                          {item.reserva.fecha_salida}
-                        </div>
-                      )}
-                      {item.reserva.hora && (
-                        <div>
-                          <span className="font-medium">Hora:</span>{" "}
-                          {item.reserva.hora}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div className="flex justify-between items-center pt-3 border-t font-bold text-lg">
-                <span>Total</span>
-                <span className="text-reservat-primary">
-                  ${getCartTotal().toLocaleString()}
-                </span>
-              </div>
-            </div>
-            <div className="p-4 border-t flex space-x-2">
-              <button
-                onClick={() => setShowSummary(false)}
-                className="btn-secondary w-1/2"
-              >
-                Volver
-              </button>
-              <button
-                onClick={() => {
-                  setShowSummary(false);
-                  Swal.fire({
-                    title: "Funcionalidad en desarrollo",
-                    text: "La integración con la API de reservas está en desarrollo",
-                    icon: "info",
-                    confirmButtonColor: "#263DBF",
-                  });
-                }}
-                className="btn-primary w-1/2"
-              >
-                Confirmar y pagar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

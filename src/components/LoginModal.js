@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import Swal from 'sweetalert2';
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const { login, loading } = useApp();
+  const { login, loading, ejecutarIntencionPendiente } = useApp();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -35,7 +35,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      Swal.fire({
+      await Swal.fire({
         icon: 'success',
         title: '¡Bienvenido!',
         text: 'Has iniciado sesión correctamente',
@@ -43,8 +43,11 @@ const LoginModal = ({ isOpen, onClose }) => {
         timer: 2000,
         showConfirmButton: false
       });
-      onClose();
       setFormData({ email: '', password: '' });
+      // Retomar lo que el usuario estaba haciendo cuando le pedimos la
+      // sesión, antes de cerrar (cerrar descarta la intención pendiente).
+      ejecutarIntencionPendiente();
+      onClose();
     } else {
       Swal.fire({
         icon: 'error',
@@ -58,7 +61,9 @@ const LoginModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+    // z-[60]: el login siempre se abre por encima de otro modal (la ficha de
+    // un servicio, el carrito), que usan z-50.
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60] animate-fade-in">
       <div className="bg-white rounded-xl max-w-md w-full p-6 animate-slide-up">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

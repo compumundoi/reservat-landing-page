@@ -13,10 +13,12 @@ const Header = () => {
     getCartItemsCount,
     currentCategory,
     setCategory,
+    loginAbierto,
+    abrirLogin,
+    cerrarLogin,
   } = useApp();
 
   const [showCart, setShowCart] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showReservations, setShowReservations] = useState(false);
@@ -152,7 +154,7 @@ const Header = () => {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowLogin(true)}
+                  onClick={() => abrirLogin()}
                   className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-reservat-primary to-reservat-primary/90 hover:from-reservat-primary/90 hover:to-reservat-primary text-white px-6 py-2.5 rounded-2xl font-bold transition-all duration-300 shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.4)] hover:-translate-y-0.5"
                 >
                   <LogIn className="h-4 w-4" />
@@ -210,7 +212,7 @@ const Header = () => {
         isOpen={showReservations}
         onClose={() => setShowReservations(false)}
       />
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      <LoginModal isOpen={loginAbierto} onClose={cerrarLogin} />
 
       {/* Overlay for user menu */}
       {showUserMenu && (

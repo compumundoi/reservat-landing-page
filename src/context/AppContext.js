@@ -203,6 +203,33 @@ export function AppProvider({ children }) {
   const photosCache = useRef(new Map());
   const photosRequestsInProgress = useRef(new Set());
 
+  // El modal de login se abre desde el header y también desde cualquier
+  // punto que necesite sesión, por eso su estado vive acá y no en el header.
+  const [loginAbierto, setLoginAbierto] = useState(false);
+  // Lo que el usuario estaba intentando hacer cuando se le pidió la sesión.
+  // Se ejecuta al entrar, para que no tenga que repetir el camino.
+  const intencionPendiente = useRef(null);
+
+  const abrirLogin = (alIniciarSesion = null) => {
+    intencionPendiente.current = alIniciarSesion;
+    setLoginAbierto(true);
+  };
+
+  const cerrarLogin = () => {
+    intencionPendiente.current = null;
+    setLoginAbierto(false);
+  };
+
+  // La ejecuta el modal de login recién después de avisar la bienvenida: si
+  // corriera durante el login, su propio aviso pisaría al de la acción.
+  const ejecutarIntencionPendiente = () => {
+    const intencion = intencionPendiente.current;
+    intencionPendiente.current = null;
+    if (typeof intencion === "function") {
+      intencion();
+    }
+  };
+
   // Check for existing token on app load
   useEffect(() => {
     const token = Cookies.get("access_token");
@@ -466,6 +493,10 @@ export function AppProvider({ children }) {
       dispatch({ type: "REMOVE_FROM_CART", payload: serviceId }),
     updateCartQuantity: (id, quantity) =>
       dispatch({ type: "UPDATE_CART_QUANTITY", payload: { id, quantity } }),
+    loginAbierto,
+    abrirLogin,
+    cerrarLogin,
+    ejecutarIntencionPendiente,
     updateCartReserva: (id, quantity, reserva) =>
       dispatch({
         type: "UPDATE_CART_RESERVA",

@@ -6,7 +6,7 @@ import { validarReserva, capacidadDelServicio } from '../utils/validarReserva';
 import { calcularTotalItem, detalleDelTotal, esPorRango } from '../utils/precios';
 
 const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
-  const { addToCart, isAuthenticated } = useApp();
+  const { addToCart, isAuthenticated, abrirLogin } = useApp();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   // Estado de reserva
   const [personas, setPersonas] = useState(1);
@@ -38,19 +38,21 @@ const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
   const totalEstimado = calcularTotalItem(itemEstimado);
   const detalleEstimado = detalleDelTotal(itemEstimado);
 
-  const handleAddToCart = () => {
-    // Sin sesión la solicitud no se puede enviar igual: mejor avisarlo acá
-    // que después de que el usuario haya armado todo el carrito.
-    if (!isAuthenticated) {
-      return Swal.fire({
-        icon: 'info',
-        title: 'Necesitas iniciar sesión',
-        text: 'Reservar requiere una cuenta de mayorista. Inicia sesión y vuelve a intentarlo.',
-        confirmButtonColor: '#263DBF',
-        confirmButtonText: 'Entendido'
-      });
-    }
+  const agregarAlCarrito = (reserva) => {
+    addToCart(service, { quantity: personas, reserva });
+    Swal.fire({
+      title: '¡Agregado al carrito!',
+      text: `${service.nombre} ha sido agregado a tu carrito`,
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+    onClose && onClose();
+  };
 
+  const handleAddToCart = () => {
     const resultado = validarReserva({
       tipoServicio: service.tipo_servicio,
       personas,
@@ -69,17 +71,28 @@ const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
       });
     }
 
-    addToCart(service, { quantity: personas, reserva: resultado.reserva });
-    Swal.fire({
-      title: '¡Agregado al carrito!',
-      text: `${service.nombre} ha sido agregado a tu carrito`,
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false,
-      toast: true,
-      position: 'top-end'
-    });
-    onClose && onClose();
+    // La sesión se pide recién acá, con los datos ya validados: así al
+    // volver de iniciar sesión la reserva se agrega sola, sin repetir nada.
+    if (!isAuthenticated) {
+      return Swal.fire({
+        icon: 'info',
+        title: 'Necesitas iniciar sesión',
+        html:
+          'Reservar requiere una cuenta de mayorista.<br/>' +
+          'Al iniciar sesión seguimos con esta reserva.',
+        showCancelButton: true,
+        confirmButtonText: 'Iniciar sesión',
+        cancelButtonText: 'Ahora no',
+        confirmButtonColor: '#263DBF',
+        cancelButtonColor: '#6b7280'
+      }).then((decision) => {
+        if (decision.isConfirmed) {
+          abrirLogin(() => agregarAlCarrito(resultado.reserva));
+        }
+      });
+    }
+
+    agregarAlCarrito(resultado.reserva);
   };
 
   const nextImage = () => {

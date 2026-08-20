@@ -10,6 +10,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import Cookies from "js-cookie";
 
 const typeIcon = (tipo) => {
   const t = String(tipo || "").toLowerCase();
@@ -57,7 +58,10 @@ const ReservationsModal = ({ isOpen, onClose }) => {
       try {
         const idMayorista = user.id_mayorista || user.id;
         const url = `${API_BASE_URL}/reservas/listar/mayorista/${idMayorista}`;
-        const res = await fetch(url);
+        const token = Cookies.get("access_token");
+        const res = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data?.message || "Error al cargar reservas");

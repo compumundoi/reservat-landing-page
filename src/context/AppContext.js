@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import Cookies from "js-cookie";
 import jwtDecode from "jwt-decode";
+import { calcularTotalItem } from "../utils/precios";
 
 const AppContext = createContext();
 
@@ -139,6 +140,25 @@ function appReducer(state, action) {
         ...state,
         cart: filteredCart,
       };
+
+    // Editar fechas, hora y personas de un item ya agregado, para que
+    // corregir un dato no obligue a eliminarlo y volver a empezar.
+    case "UPDATE_CART_RESERVA": {
+      const carritoEditado = state.cart.map((item) =>
+        item.id_servicio === action.payload.id
+          ? {
+              ...item,
+              quantity: action.payload.quantity,
+              reserva: action.payload.reserva,
+            }
+          : item,
+      );
+      saveCartToStorage(carritoEditado);
+      return {
+        ...state,
+        cart: carritoEditado,
+      };
+    }
 
     case "UPDATE_CART_QUANTITY":
       const updatedCart = state.cart
@@ -366,9 +386,11 @@ export function AppProvider({ children }) {
     [dispatch],
   );
 
+  // El alojamiento se cobra por noche y el resto por persona: la regla vive
+  // en utils/precios para que el carrito, la ficha y el resumen coincidan.
   const getCartTotal = () => {
     return state.cart.reduce(
-      (total, item) => total + item.precio * item.quantity,
+      (total, item) => total + calcularTotalItem(item),
       0,
     );
   };
@@ -444,6 +466,11 @@ export function AppProvider({ children }) {
       dispatch({ type: "REMOVE_FROM_CART", payload: serviceId }),
     updateCartQuantity: (id, quantity) =>
       dispatch({ type: "UPDATE_CART_QUANTITY", payload: { id, quantity } }),
+    updateCartReserva: (id, quantity, reserva) =>
+      dispatch({
+        type: "UPDATE_CART_RESERVA",
+        payload: { id, quantity, reserva },
+      }),
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
     setCategory: (category) =>
       dispatch({ type: "SET_CATEGORY", payload: category }),

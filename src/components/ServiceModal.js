@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { X, MapPin, Calendar, Star, ShoppingCart, ChevronLeft, ChevronRight, Users, Clock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Swal from 'sweetalert2';
+import { validarReserva, capacidadDelServicio } from '../utils/validarReserva';
+import { calcularTotalItem, detalleDelTotal, esPorRango } from '../utils/precios';
 
 const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
-  const { addToCart } = useApp();
+  const { addToCart, isAuthenticated } = useApp();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   // Estado de reserva
   const [personas, setPersonas] = useState(1);
@@ -19,75 +21,55 @@ const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
 
   if (!isOpen || !service) return null;
 
+  const capacidad = capacidadDelServicio(service.detalles_del_servicio);
+  const reservaPorRango = esPorRango(service.tipo_servicio);
+
+  // La reserva es siempre a futuro: el calendario ni siquiera ofrece hoy.
+  const manana = new Date();
+  manana.setDate(manana.getDate() + 1);
+  const minimaFechaEntrada = manana.toISOString().slice(0, 10);
+
+  const itemEstimado = {
+    precio: service.precio,
+    tipo_servicio: service.tipo_servicio,
+    quantity: personas,
+    reserva: { fecha_entrada: fechaEntrada, fecha_salida: fechaSalida }
+  };
+  const totalEstimado = calcularTotalItem(itemEstimado);
+  const detalleEstimado = detalleDelTotal(itemEstimado);
+
   const handleAddToCart = () => {
-    // Validaciones según tipo de servicio
-    const tipo = (service.tipo_servicio || '').toLowerCase();
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
+    // Sin sesión la solicitud no se puede enviar igual: mejor avisarlo acá
+    // que después de que el usuario haya armado todo el carrito.
+    if (!isAuthenticated) {
+      return Swal.fire({
+        icon: 'info',
+        title: 'Necesitas iniciar sesión',
+        text: 'Reservar requiere una cuenta de mayorista. Inicia sesión y vuelve a intentarlo.',
+        confirmButtonColor: '#263DBF',
+        confirmButtonText: 'Entendido'
+      });
+    }
 
-    if (!personaValida(personas)) {
+    const resultado = validarReserva({
+      tipoServicio: service.tipo_servicio,
+      personas,
+      fechaEntrada,
+      fechaSalida,
+      hora,
+      capacidad
+    });
+
+    if (!resultado.ok) {
       return Swal.fire({
         icon: 'warning',
-        title: 'Cantidad inválida',
-        text: 'La cantidad de personas debe ser al menos 1',
+        title: resultado.titulo,
+        text: resultado.mensaje,
         confirmButtonColor: '#263DBF'
       });
     }
 
-    if (!fechaEntrada) {
-      return Swal.fire({
-        icon: 'warning',
-        title: 'Fecha requerida',
-        text: 'Debes seleccionar una fecha de entrada',
-        confirmButtonColor: '#263DBF'
-      });
-    }
-
-    const fEntrada = new Date(fechaEntrada);
-    if (!(fEntrada > hoy)) {
-      return Swal.fire({
-        icon: 'warning',
-        title: 'Fecha de entrada inválida',
-        text: 'La fecha de entrada debe ser mayor a la fecha actual',
-        confirmButtonColor: '#263DBF'
-      });
-    }
-
-    let reserva = { fecha_entrada: fechaEntrada };
-
-    if (tipo === 'alojamiento' || tipo === 'hoteles') {
-      if (!fechaSalida) {
-        return Swal.fire({
-          icon: 'warning',
-          title: 'Fecha de salida requerida',
-          text: 'Debes seleccionar una fecha de salida',
-          confirmButtonColor: '#263DBF'
-        });
-      }
-      const fSalida = new Date(fechaSalida);
-      if (!(fSalida > fEntrada)) {
-        return Swal.fire({
-          icon: 'warning',
-          title: 'Fecha de salida inválida',
-          text: 'La fecha de salida debe ser mayor a la fecha de entrada',
-          confirmButtonColor: '#263DBF'
-        });
-      }
-      reserva.fecha_salida = fechaSalida;
-    } else {
-      // experiencias o restaurante
-      if (!hora) {
-        return Swal.fire({
-          icon: 'warning',
-          title: 'Hora requerida',
-          text: 'Debes seleccionar una hora',
-          confirmButtonColor: '#263DBF'
-        });
-      }
-      reserva.hora = hora;
-    }
-
-    addToCart(service, { quantity: personas, reserva });
+    addToCart(service, { quantity: personas, reserva: resultado.reserva });
     Swal.fire({
       title: '¡Agregado al carrito!',
       text: `${service.nombre} ha sido agregado a tu carrito`,
@@ -99,8 +81,6 @@ const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
     });
     onClose && onClose();
   };
-
-  const personaValida = (n) => Number(n) >= 1;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % modalImages.length);
@@ -619,50 +599,106 @@ const ServiceModal = ({ service, images = [], isOpen, onClose }) => {
                 </div>
                 {/* Formulario de reserva */}
                 <div className="space-y-3 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-4 h-4 text-gray-500" />
-                    <input
-                      type="number"
-                      min={1}
-                      value={personas}
-                      onChange={(e) => setPersonas(parseInt(e.target.value || '1', 10))}
-                      className="input w-full"
-                      placeholder="Cantidad de personas"
-                    />
+                  <div>
+                    <label
+                      htmlFor="reserva-personas"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Personas
+                      {capacidad != null && (
+                        <span className="text-gray-400 font-normal">
+                          {' '}(máx. {capacidad})
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <input
+                        id="reserva-personas"
+                        type="number"
+                        min={1}
+                        max={capacidad || undefined}
+                        value={personas}
+                        onChange={(e) => setPersonas(parseInt(e.target.value || '1', 10))}
+                        className="input w-full"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <input
-                      type="date"
-                      value={fechaEntrada}
-                      onChange={(e) => setFechaEntrada(e.target.value)}
-                      className="input w-full"
-                      placeholder="Fecha de entrada"
-                    />
-                  </div>
-                  {(service.tipo_servicio?.toLowerCase() === 'alojamiento' || service.tipo_servicio?.toLowerCase() === 'hoteles') ? (
+
+                  <div>
+                    <label
+                      htmlFor="reserva-entrada"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {reservaPorRango ? 'Fecha de entrada' : 'Fecha'}
+                    </label>
                     <div className="flex items-center space-x-2">
                       <Calendar className="w-4 h-4 text-gray-500" />
                       <input
+                        id="reserva-entrada"
                         type="date"
-                        value={fechaSalida}
-                        onChange={(e) => setFechaSalida(e.target.value)}
+                        min={minimaFechaEntrada}
+                        value={fechaEntrada}
+                        onChange={(e) => setFechaEntrada(e.target.value)}
                         className="input w-full"
-                        placeholder="Fecha de salida"
                       />
+                    </div>
+                  </div>
+
+                  {reservaPorRango ? (
+                    <div>
+                      <label
+                        htmlFor="reserva-salida"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Fecha de salida
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <input
+                          id="reserva-salida"
+                          type="date"
+                          min={fechaEntrada || minimaFechaEntrada}
+                          value={fechaSalida}
+                          onChange={(e) => setFechaSalida(e.target.value)}
+                          className="input w-full"
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <input
-                        type="time"
-                        value={hora}
-                        onChange={(e) => setHora(e.target.value)}
-                        className="input w-full"
-                        placeholder="Hora"
-                      />
+                    <div>
+                      <label
+                        htmlFor="reserva-hora"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Hora
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <input
+                          id="reserva-hora"
+                          type="time"
+                          value={hora}
+                          onChange={(e) => setHora(e.target.value)}
+                          className="input w-full"
+                        />
+                      </div>
                     </div>
                   )}
+                </div>
+
+                {/* Total en vivo: el usuario ve lo que va a pagar antes de
+                    agregar, no recién en el carrito. */}
+                <div className="border-t border-gray-100 pt-4 mb-4">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-gray-600">Total</span>
+                    <span className="text-xl font-bold text-reservat-primary">
+                      ${totalEstimado.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 text-right mt-0.5">
+                    {detalleEstimado}
+                  </p>
                 </div>
 
                 <button

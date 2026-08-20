@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { X, Plus, Minus, Trash2, ShoppingBag, LogIn } from "lucide-react";
+import { X, Plus, Minus, Trash2, ShoppingBag, LogIn, Pencil } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
+import CartItemEditor from "./CartItemEditor";
+import { calcularTotalItem, detalleDelTotal } from "../utils/precios";
+import { capacidadDelServicio } from "../utils/validarReserva";
 
 const Cart = ({ isOpen, onClose }) => {
   const {
@@ -16,9 +19,11 @@ const Cart = ({ isOpen, onClose }) => {
     user,
     servicePhotos,
     fetchServicePhotos,
+    updateCartReserva,
   } = useApp();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
 
   // Cargar fotos de los servicios en el carrito
   useEffect(() => {
@@ -30,12 +35,28 @@ const Cart = ({ isOpen, onClose }) => {
     });
   }, [cart, servicePhotos, fetchServicePhotos]);
 
-  const handleQuantityChange = (serviceId, newQuantity) => {
+  const handleQuantityChange = (item, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(serviceId);
-    } else {
-      updateCartQuantity(serviceId, newQuantity);
+      removeFromCart(item.id_servicio);
+      return;
     }
+
+    // No dejar pasar de la capacidad del servicio: el backend rechaza esa
+    // reserva igual, y es mejor decirlo acá que al enviar todo el carrito.
+    const capacidad = capacidadDelServicio(item.detalles_del_servicio);
+    if (capacidad != null && newQuantity > capacidad) {
+      Swal.fire({
+        icon: "warning",
+        title: "Supera la capacidad",
+        text: `${item.nombre} admite hasta ${capacidad} ${
+          capacidad === 1 ? "persona" : "personas"
+        }.`,
+        confirmButtonColor: "#263DBF",
+      });
+      return;
+    }
+
+    updateCartQuantity(item.id_servicio, newQuantity);
   };
 
   const handleRemoveItem = (serviceId, serviceName) => {
@@ -170,6 +191,7 @@ const Cart = ({ isOpen, onClose }) => {
           cantidad: item.quantity || 1,
           fecha_inicio: fechaEntrada,
           fecha_fin: fechaSalida,
+          hora: item?.reserva?.hora || null,
         };
 
         return fetch(endpoint, {
@@ -326,10 +348,7 @@ const Cart = ({ isOpen, onClose }) => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() =>
-                          handleQuantityChange(
-                            item.id_servicio,
-                            item.quantity - 1,
-                          )
+                          handleQuantityChange(item, item.quantity - 1)
                         }
                         className="p-1 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
                       >
@@ -340,10 +359,7 @@ const Cart = ({ isOpen, onClose }) => {
                       </span>
                       <button
                         onClick={() =>
-                          handleQuantityChange(
-                            item.id_servicio,
-                            item.quantity + 1,
-                          )
+                          handleQuantityChange(item, item.quantity + 1)
                         }
                         className="p-1 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
                       >
@@ -351,35 +367,58 @@ const Cart = ({ isOpen, onClose }) => {
                       </button>
                     </div>
 
-                    <p className="font-bold text-gray-900">
-                      ${(item.precio * item.quantity).toLocaleString()}
-                    </p>
+                    <div className="text-right">
+                      <p className="font-bold text-gray-900">
+                        ${calcularTotalItem(item).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {detalleDelTotal(item)}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Detalles de reserva */}
-                  {item.reserva && (
-                    <div className="mt-3 text-sm text-gray-600 space-y-1">
-                      <div>
-                        <span className="font-medium">Personas:</span>{" "}
-                        {item.quantity}
-                      </div>
-                      <div>
-                        <span className="font-medium">Fecha entrada:</span>{" "}
-                        {item.reserva.fecha_entrada}
-                      </div>
-                      {item.reserva.fecha_salida && (
+                  {editandoId === item.id_servicio ? (
+                    <CartItemEditor
+                      item={item}
+                      onCancel={() => setEditandoId(null)}
+                      onSave={(personas, reserva) => {
+                        updateCartReserva(item.id_servicio, personas, reserva);
+                        setEditandoId(null);
+                      }}
+                    />
+                  ) : (
+                    item.reserva && (
+                      <div className="mt-3 text-sm text-gray-600 space-y-1">
                         <div>
-                          <span className="font-medium">Fecha salida:</span>{" "}
-                          {item.reserva.fecha_salida}
+                          <span className="font-medium">Personas:</span>{" "}
+                          {item.quantity}
                         </div>
-                      )}
-                      {item.reserva.hora && (
                         <div>
-                          <span className="font-medium">Hora:</span>{" "}
-                          {item.reserva.hora}
+                          <span className="font-medium">Fecha entrada:</span>{" "}
+                          {item.reserva.fecha_entrada}
                         </div>
-                      )}
-                    </div>
+                        {item.reserva.fecha_salida && (
+                          <div>
+                            <span className="font-medium">Fecha salida:</span>{" "}
+                            {item.reserva.fecha_salida}
+                          </div>
+                        )}
+                        {item.reserva.hora && (
+                          <div>
+                            <span className="font-medium">Hora:</span>{" "}
+                            {item.reserva.hora}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setEditandoId(item.id_servicio)}
+                          className="mt-1 inline-flex items-center gap-1 text-sm text-reservat-primary hover:underline"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar reserva
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
               ))}

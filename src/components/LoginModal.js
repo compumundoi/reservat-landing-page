@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
-import { X, Eye, EyeOff, LogIn, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Eye, EyeOff, LogIn, Loader, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Swal from 'sweetalert2';
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const { login, loading, ejecutarIntencionPendiente } = useApp();
+  const { login, loading, authError, limpiarAuthError, ejecutarIntencionPendiente } = useApp();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  // Errores de validación del propio formulario, antes de llamar a la API.
+  const [errorLocal, setErrorLocal] = useState('');
+
+  // Un error de sesión pertenece al intento que lo produjo: al abrir el modal
+  // otra vez se empieza limpio.
+  useEffect(() => {
+    if (isOpen) {
+      setErrorLocal('');
+      limpiarAuthError();
+    }
+    // limpiarAuthError es estable (viene del dispatch del contexto).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Corregir lo que se escribió mal borra el aviso: dejarlo ahí mientras el
+    // usuario reescribe el correo sólo suma ruido.
+    if (errorLocal) setErrorLocal('');
+    if (authError) limpiarAuthError();
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -23,12 +40,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos requeridos',
-        text: 'Por favor completa todos los campos',
-        confirmButtonColor: '#263DBF'
-      });
+      setErrorLocal('Completa tu correo y tu contraseña');
       return;
     }
 
@@ -48,14 +60,9 @@ const LoginModal = ({ isOpen, onClose }) => {
       // sesión, antes de cerrar (cerrar descarta la intención pendiente).
       ejecutarIntencionPendiente();
       onClose();
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error de autenticación',
-        text: result.error,
-        confirmButtonColor: '#263DBF'
-      });
     }
+    // El fallo se muestra dentro del formulario (authError), no en otro modal
+    // encima de éste.
   };
 
   if (!isOpen) return null;
@@ -78,6 +85,17 @@ const LoginModal = ({ isOpen, onClose }) => {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Aviso de error: junto a los campos que hay que corregir */}
+          {(errorLocal || authError) && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-100"
+            >
+              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+              <p className="text-sm text-red-700">{errorLocal || authError}</p>
+            </div>
+          )}
+
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">

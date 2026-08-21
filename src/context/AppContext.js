@@ -51,7 +51,11 @@ const initialState = {
   services: [],
   servicePhotos: {}, // Almacenar fotos por servicio ID
   loading: false,
+  // `error` es del catalogo de servicios: lo que falle ahi reemplaza el
+  // listado. El login tiene el suyo (`authError`) porque un correo mal escrito
+  // no puede borrar de la pantalla los servicios que ya estaban cargados.
   error: null,
+  authError: null,
   currentCategory: "all",
   searchFilters: {
     ciudad: "",
@@ -68,6 +72,9 @@ function appReducer(state, action) {
 
     case "SET_ERROR":
       return { ...state, error: action.payload, loading: false };
+
+    case "SET_AUTH_ERROR":
+      return { ...state, authError: action.payload, loading: false };
 
     case "SET_USER":
       return {
@@ -237,7 +244,15 @@ export function AppProvider({ children }) {
       try {
         const decoded = jwtDecode(token);
         if (decoded.exp * 1000 > Date.now()) {
+          // El token sólo trae id, correo y tipo: alcanza para tener sesión,
+          // pero no para saludar por el nombre. Se muestra ya con eso y
+          // enseguida se completa con la ficha del mayorista, que es de donde
+          // sale el nombre.
           dispatch({ type: "SET_USER", payload: decoded });
+          fetchUserData(decoded.id, {
+            cerrarSesionSiFalla: false,
+            base: decoded,
+          });
         } else {
           Cookies.remove("access_token");
         }
@@ -246,6 +261,8 @@ export function AppProvider({ children }) {
         Cookies.remove("access_token");
       }
     }
+    // Sólo al montar: fetchUserData es estable durante la vida del provider.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cargar carrito desde localStorage después del montaje
@@ -259,9 +276,20 @@ export function AppProvider({ children }) {
     }
   }, [cartLoaded]);
 
-  const fetchUserData = async (userId) => {
+  // `cerrarSesionSiFalla` es false al restaurar la sesión tras un F5: si el
+  // catálogo de mayoristas no responde, el usuario se queda con los datos del
+  // token en vez de que lo echemos de una sesión que sigue siendo válida.
+  const fetchUserData = async (
+    userId,
+    { cerrarSesionSiFalla = true, base = {} } = {},
+  ) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
+      // `loading` es el del catálogo y lo mira ServicesList: sólo se toca
+      // durante el login, donde el usuario está esperando. Al restaurar la
+      // sesión el perfil se completa en silencio, sin poner a cargar la home.
+      if (cerrarSesionSiFalla) {
+        dispatch({ type: "SET_LOADING", payload: true });
+      }
       // El catálogo de mayoristas exige sesión: el token ya está en la
       // cookie cuando se llama a esto, justo después de iniciar sesión.
       const token = Cookies.get("access_token");
@@ -272,24 +300,27 @@ export function AppProvider({ children }) {
 
       if (response.ok) {
         const userData = await response.json();
-        dispatch({ type: "SET_USER", payload: userData });
+        // El id y el tipo viven en el token, no en la ficha del mayorista:
+        // llegan en `base` para que la sesión siga completa.
+        dispatch({ type: "SET_USER", payload: { ...base, ...userData } });
       } else {
         throw new Error("Failed to fetch user data");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      dispatch({
-        type: "SET_ERROR",
-        payload: "Error al cargar datos del usuario",
-      });
-      dispatch({ type: "LOGOUT" });
+      if (cerrarSesionSiFalla) {
+        dispatch({ type: "SET_AUTH_ERROR", payload: "Error al cargar datos del usuario" });
+        dispatch({ type: "LOGOUT" });
+      }
+      // Si no hay que cerrar sesión no se toca nada más: el usuario sigue
+      // dentro con lo que trae el token, sólo sin su nombre.
     }
   };
 
   const login = async (email, password) => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "SET_ERROR", payload: null });
+      dispatch({ type: "SET_AUTH_ERROR", payload: null });
 
       const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
         method: "POST",
@@ -317,7 +348,7 @@ export function AppProvider({ children }) {
           sameSite: "strict",
         });
 
-        await fetchUserData(decoded.id);
+        await fetchUserData(decoded.id, { base: decoded });
         return { success: true };
       } else {
         let errorMessage = "Error de autenticación";
@@ -338,12 +369,12 @@ export function AppProvider({ children }) {
           default:
             errorMessage = data.detail || "Error de autenticación";
         }
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: "SET_AUTH_ERROR", payload: errorMessage });
         return { success: false, error: errorMessage };
       }
     } catch (error) {
       const errorMessage = "Error de conexión";
-      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      dispatch({ type: "SET_AUTH_ERROR", payload: errorMessage });
       return { success: false, error: errorMessage };
     }
   };
@@ -486,6 +517,7 @@ export function AppProvider({ children }) {
     ...state,
     dispatch,
     login,
+    limpiarAuthError: () => dispatch({ type: "SET_AUTH_ERROR", payload: null }),
     fetchServices,
     fetchServicePhotos,
     getCartTotal,

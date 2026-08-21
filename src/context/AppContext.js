@@ -262,8 +262,12 @@ export function AppProvider({ children }) {
   const fetchUserData = async (userId) => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
+      // El catálogo de mayoristas exige sesión: el token ya está en la
+      // cookie cuando se llama a esto, justo después de iniciar sesión.
+      const token = Cookies.get("access_token");
       const response = await fetch(
         `${API_BASE_URL}/mayorista/consultar/${userId}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       );
 
       if (response.ok) {

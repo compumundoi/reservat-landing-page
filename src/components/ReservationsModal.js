@@ -167,6 +167,40 @@ const ReservationsModal = ({ isOpen, onClose }) => {
                     )}
                   </div>
 
+                  {/* Estado del cobro. Sólo tiene sentido en una reserva
+                      aprobada: antes no hay nada que pagar. */}
+                  {String(r.estado).toLowerCase() === "aprobada" &&
+                    r.estado_pago !== "no_aplica" && (
+                      <div className="mt-2">
+                        {r.estado_pago === "aprobado" ? (
+                          <div className="p-2.5 bg-green-50 border border-green-100 rounded-lg">
+                            <p className="text-sm text-green-700 font-medium">
+                              Pago confirmado
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-lg">
+                            <p className="text-sm text-blue-800 mb-2">
+                              {r.estado_pago === "rechazado" ||
+                              r.estado_pago === "error"
+                                ? "El pago anterior no se completó. Puedes intentarlo de nuevo."
+                                : "Tu reserva está aprobada. Completa el pago para confirmarla."}
+                            </p>
+                            {r.pago_link_url && (
+                              <a
+                                href={r.pago_link_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-reservat-primary text-white text-sm font-medium rounded-lg hover:opacity-90"
+                              >
+                                Pagar ${calcularTotalReserva(r).toLocaleString()}
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   {/* El motivo es la respuesta que el mayorista está esperando:
                       sin esto, un rechazo no le dice nada. */}
                   {String(r.estado).toLowerCase() === "rechazada" &&

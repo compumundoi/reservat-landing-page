@@ -308,9 +308,12 @@ export function AppProvider({ children }) {
         const decoded = jwtDecode(data.access_token);
 
         // Set cookie with expiration
+        // `secure: true` hace que el navegador descarte la cookie cuando la
+        // página no está en HTTPS, y la sesión se perdía sin aviso. Se activa
+        // sólo donde corresponde, para que en desarrollo (HTTP) funcione.
         Cookies.set("access_token", data.access_token, {
           expires: new Date(decoded.exp * 1000),
-          secure: true,
+          secure: window.location.protocol === "https:",
           sameSite: "strict",
         });
 

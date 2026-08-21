@@ -70,3 +70,34 @@ export const detalleDelTotal = (item) => {
   const personas = Number(item?.quantity) || 1;
   return `${formateado} × ${personas} ${personas === 1 ? "persona" : "personas"}`;
 };
+
+/**
+ * Total de una reserva ya creada, tal como la devuelve el backend.
+ *
+ * Misma regla que el carrito, pero sobre los campos que guarda la reserva:
+ * si difirieran, el mayorista vería un precio al reservar y otro al
+ * consultar su reserva.
+ */
+export const calcularTotalReserva = (reserva) => {
+  const precio = Number(reserva?.precio) || 0;
+
+  if (esPorRango(reserva?.tipo_servicio)) {
+    return precio * calcularNoches(reserva?.fecha_inicio, reserva?.fecha_fin);
+  }
+
+  return precio * (Number(reserva?.cantidad) || 1);
+};
+
+/** Detalle legible del total de una reserva creada. */
+export const detalleDeReserva = (reserva) => {
+  const precio = Number(reserva?.precio) || 0;
+  const formateado = `$${precio.toLocaleString()}`;
+
+  if (esPorRango(reserva?.tipo_servicio)) {
+    const noches = calcularNoches(reserva?.fecha_inicio, reserva?.fecha_fin);
+    return `${formateado} × ${noches} ${noches === 1 ? "noche" : "noches"}`;
+  }
+
+  const personas = Number(reserva?.cantidad) || 1;
+  return `${formateado} × ${personas} ${personas === 1 ? "persona" : "personas"}`;
+};

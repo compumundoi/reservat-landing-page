@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Cookies from "js-cookie";
+import { calcularTotalReserva, detalleDeReserva } from "../utils/precios";
+import { formatearFecha } from "../utils/fechas";
 
 const typeIcon = (tipo) => {
   const t = String(tipo || "").toLowerCase();
@@ -19,25 +21,30 @@ const typeIcon = (tipo) => {
   return <Clock className="h-4 w-4" />;
 };
 
+// Estados reales de una reserva: nace pendiente y un administrador la
+// mueve a aprobada o rechazada.
 const stateBadge = (estado) => {
   const e = String(estado || "").toLowerCase();
-  if (e === "confirmada" || e === "confirmado") {
+
+  if (e === "aprobada") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-        <CheckCircle2 className="h-3 w-3 mr-1" /> {estado}
+        <CheckCircle2 className="h-3 w-3 mr-1" /> Aprobada
       </span>
     );
   }
-  if (e === "cancelada" || e === "cancelado") {
+
+  if (e === "rechazada") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-        <AlertCircle className="h-3 w-3 mr-1" /> {estado}
+        <AlertCircle className="h-3 w-3 mr-1" /> Rechazada
       </span>
     );
   }
+
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
-      <Clock className="h-3 w-3 mr-1" /> {estado || "pendiente"}
+      <Clock className="h-3 w-3 mr-1" /> Pendiente de aprobación
     </span>
   );
 };
@@ -131,16 +138,50 @@ const ReservationsModal = ({ isOpen, onClose }) => {
                     </div>
                     <div className="text-right ml-3">
                       <div className="font-bold text-reservat-primary">
-                        ${Number(r.precio).toLocaleString()}
+                        ${calcularTotalReserva(r).toLocaleString()}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Cant: {r.cantidad}
+                        {detalleDeReserva(r)}
                       </div>
                     </div>
                   </div>
+
+                  {/* Lo que el mayorista reservó */}
+                  <div className="mt-2 text-sm text-gray-600 space-y-0.5">
+                    <div>
+                      <span className="font-medium">Fechas:</span>{" "}
+                      {formatearFecha(r.fecha_inicio)}
+                      {r.fecha_fin && r.fecha_fin !== r.fecha_inicio && (
+                        <> → {formatearFecha(r.fecha_fin)}</>
+                      )}
+                      {r.hora && <> · {r.hora}</>}
+                    </div>
+                    <div>
+                      <span className="font-medium">Personas:</span> {r.cantidad}
+                    </div>
+                    {r.nombre_proveedor && (
+                      <div>
+                        <span className="font-medium">Proveedor:</span>{" "}
+                        {r.nombre_proveedor}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* El motivo es la respuesta que el mayorista está esperando:
+                      sin esto, un rechazo no le dice nada. */}
+                  {String(r.estado).toLowerCase() === "rechazada" &&
+                    r.motivo_rechazo && (
+                      <div className="mt-2 p-2.5 bg-red-50 border border-red-100 rounded-lg">
+                        <p className="text-sm text-red-700">
+                          <span className="font-medium">Motivo del rechazo:</span>{" "}
+                          {r.motivo_rechazo}
+                        </p>
+                      </div>
+                    )}
+
                   <div className="flex items-center justify-between mt-2">
                     <div className="text-xs text-gray-500">
-                      Creada: {r.fecha_creacion}
+                      Solicitada: {formatearFecha(r.fecha_creacion)}
                     </div>
                     {stateBadge(r.estado)}
                   </div>
